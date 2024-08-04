@@ -90,6 +90,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "candump-parse"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20af2012669db0b8f836103cb8c92e834eae1558236ab151411348758c14149c"
+dependencies = [
+ "chumsky",
+]
+
+[[package]]
 name = "cc"
 version = "1.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -223,6 +232,7 @@ name = "robomaster-s1-proto"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "candump-parse",
  "chumsky",
  "clap",
 ]

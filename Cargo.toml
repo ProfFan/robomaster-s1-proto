@@ -10,4 +10,5 @@ bytemuck = { version = "1.16.*", features = ["derive"] }
 
 [dev-dependencies]
 clap = { version = "4.5.13", features = ["derive"] }
-chumsky = "*"
+candump-parse = "0.1.*"
+chumsky = "0.9.*"
