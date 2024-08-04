@@ -94,7 +94,7 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> RMAddSubView<T> {}
 mod test {
     extern crate std;
 
-    use crate::dds::{CMDID_DDS_ADD_SUB, CMDSET_DDS};
+    use crate::vbus::{CMDID_DDS_ADD_SUB, CMDSET_DDS};
 
     use super::*;
 
@@ -121,7 +121,7 @@ mod test {
         let packet = RMWireFrameView::new(&buf);
         let topic = RMTopicView::new(packet);
 
-        assert_eq!(topic.packet.cmd_set(), crate::dds::CMDSET_DDS);
+        assert_eq!(topic.packet.cmd_set(), crate::vbus::CMDSET_DDS);
         assert_eq!(topic.packet.is_valid(), true);
         assert_eq!(topic.sub_mode(), 0x00);
         assert_eq!(topic.sub_id(), 0x00); // Subscribe Session ID
@@ -178,8 +178,8 @@ mod test {
         let packet = RMWireFrameView::new(&buf);
         let addsub_view = RMAddSubView::new(packet);
 
-        assert_eq!(addsub_view.packet.cmd_set(), crate::dds::CMDSET_DDS);
-        assert_eq!(addsub_view.packet.cmd_id(), crate::dds::CMDID_DDS_ADD_SUB);
+        assert_eq!(addsub_view.packet.cmd_set(), crate::vbus::CMDSET_DDS);
+        assert_eq!(addsub_view.packet.cmd_id(), crate::vbus::CMDID_DDS_ADD_SUB);
 
         assert_eq!(addsub_view.packet.is_valid(), true);
 
@@ -315,15 +315,15 @@ mod test {
         let topics = init_view.topics().unwrap();
         assert_eq!(
             topics[0].uid,
-            crate::dds::topics::DDS_ESC_STATE // Wheel encoders
+            crate::vbus::topics::DDS_ESC_STATE // Wheel encoders
         );
         assert_eq!(
             topics[1].uid,
-            crate::dds::topics::DDS_BASE_POSITION // Bast Position
+            crate::vbus::topics::DDS_BASE_POSITION // Bast Position
         );
         assert_eq!(
             topics[2].uid,
-            crate::dds::topics::DDS_IMU_DATA // IMU Data
+            crate::vbus::topics::DDS_IMU_DATA // IMU Data
         );
         assert_eq!(
             topics[3].uid,
@@ -333,5 +333,18 @@ mod test {
             topics[4].uid,
             [0x42, 0xEE, 0x13, 0x1D, 0x03, 0x00, 0x02, 0x00] // Odom Pitch
         );
+    }
+
+    #[test]
+    fn test_heartbeat_packet() {
+        let buf = [
+            0x55, 0x1B, 0x04, 0xFF, 0x09, 0xC3, 0x00, 0x00, 0x00, 0x3F, 0x60, 0x00, 0x04, 0x20,
+            0x00, 0x01, 0x00, 0x40, 0x00, 0x02, 0x10, 0x00, 0x03, 0x00, 0x00, 0xFF, 0xFF,
+        ];
+
+        let packet = RMWireFrameView::new(&buf);
+
+        assert_eq!(packet.cmd_set(), 0x3F);
+        assert_eq!(packet.cmd_id(), 0x60);
     }
 }

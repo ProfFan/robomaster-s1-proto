@@ -27,10 +27,10 @@ fn show_buf<B: AsRef<[u8]>>(buf: B) -> String {
 fn print_packet(id: u32, packet: &[u8]) {
     let view = robomaster_s1_proto::wire::RMWireFrameView::new(packet);
     if view.is_valid() {
-        if view.cmd_set() == robomaster_s1_proto::dds::CMDSET_DDS {
+        if view.cmd_set() == robomaster_s1_proto::vbus::CMDSET_DDS {
             match view.cmd_id() {
-                robomaster_s1_proto::dds::CMDID_DDS_ADD_SUB => {
-                    let topic_view = robomaster_s1_proto::dds::topic_view::RMAddSubView::new(view);
+                robomaster_s1_proto::vbus::CMDID_DDS_ADD_SUB => {
+                    let topic_view = robomaster_s1_proto::vbus::topic_view::RMAddSubView::new(view);
                     println!(
                         "{:#0x}: DDS Add Sub: STR {}, {}{}, {:02x?}",
                         id,
@@ -44,14 +44,14 @@ fn print_packet(id: u32, packet: &[u8]) {
                         topic_view.topics()
                     );
                 }
-                robomaster_s1_proto::dds::CMDID_DDS_DEL_SUB => {
+                robomaster_s1_proto::vbus::CMDID_DDS_DEL_SUB => {
                     println!("{:#0x}: DDS Del Sub: {:02x?}", id, view.payload());
                 }
-                robomaster_s1_proto::dds::CMDID_DDS_RESET_NODE => {
+                robomaster_s1_proto::vbus::CMDID_DDS_RESET_NODE => {
                     println!("{:#0x}: DDS Reset Node {}", id, view.receiver_id());
                 }
-                robomaster_s1_proto::dds::CMDID_DDS_PUSH_MSG => {
-                    let topic_view = robomaster_s1_proto::dds::RMTopicView::new(view);
+                robomaster_s1_proto::vbus::CMDID_DDS_PUSH_MSG => {
+                    let topic_view = robomaster_s1_proto::vbus::RMTopicView::new(view);
                     if topic_view.sub_mode() == 0 {
                         println!(
                             "{:#0x}: DDS PUSH Stream: {}, {}{}, DATA {:02x?}",
@@ -75,7 +75,7 @@ fn print_packet(id: u32, packet: &[u8]) {
                                 "_"
                             },
                             if topic_view.packet.is_ack() { "K" } else { "_" },
-                            topic_view.packet
+                            topic_view.packet.payload()
                         );
                     }
                 }
