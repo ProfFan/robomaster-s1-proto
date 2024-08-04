@@ -247,6 +247,7 @@ mod tests {
 
     #[test]
     fn test_heartbeat_msg() {
+        // The so call heartbeat message is actually a RMC (RM Control) message
         let buf = [
             0x55, 0x1B, 0x04, 0x75, 0x09, 0xC3, 0xE0, 0x00, 0x00, 0x3F, 0x60, 0x00, 0x04, 0x20,
             0x00, 0x01, 0x00, 0x40, 0x00, 0x02, 0x10, 0x04, 0x03, 0x00, 0x04, 0xFA, 0xF0,
@@ -260,8 +261,14 @@ mod tests {
         assert_eq!(frame.sequence_number(), 0xE0);
         assert_eq!(frame.is_ack(), false);
         assert_eq!(frame.need_ack(), false);
-        assert_eq!(frame.cmd_set(), 0x3F);
-        assert_eq!(frame.cmd_id(), 0x60);
+        assert_eq!(
+            frame.cmd_set(),
+            crate::duss::cmd_set_types::CommandSetType::RM as u8
+        );
+        assert_eq!(
+            frame.cmd_id(),
+            crate::duss::cmd_set_rm::RMCommandType::FC_RMC as u8
+        );
         assert_eq!(frame.payload(), &buf[11..buf.len() - 2]);
 
         let crc8_calculated = crate::crc::rm_crc8(0x77, &buf[..3]);
@@ -269,6 +276,102 @@ mod tests {
 
         let crc16_calculated = crate::crc::rm_crc16(0x3692, &buf[..buf.len() - 2]);
         assert_eq!(crc16_calculated, 0xF0FA);
+    }
+
+    #[test]
+    fn test_slow_mode_enter() {
+        let buf = [
+            0x55, 0x0E, 0x04, 0xFF, 0x09, 0xC3, 0xFF, 0xFF, 0x40, 0x3F, 0x3F, 0x03, 0xFF, 0xFF,
+        ];
+
+        let frame = RMWireFrameView::new(&buf);
+
+        assert_eq!(frame.sender_id(), 0x09);
+        assert_eq!(frame.receiver_id(), 0xC3);
+        assert_eq!(frame.packet_length_field(), 0x0E);
+
+        assert_eq!(frame.sequence_number(), 0xFFFF);
+        assert_eq!(
+            frame.cmd_set(),
+            crate::duss::cmd_set_types::CommandSetType::RM as u8
+        );
+        assert_eq!(
+            frame.cmd_id(),
+            crate::duss::cmd_set_rm::RMCommandType::SET_CHASSIS_SPEED as u8
+        );
+        assert_eq!(frame.payload(), &[0x3]);
+        assert_eq!(frame.need_ack(), false);
+    }
+
+    #[test]
+    fn test_set_led_1() {
+        let buf = [
+            0x55, 0x1A, 0x04, 0xFF, 0x09, 0x18, 0xFF, 0xFF, 0x00, 0x3F, 0x32, 0x01, 0xFF, 0x00,
+            0x00, 0x00, 0xFF, 0x00, 0xC8, 0x00, 0xC8, 0x00, 0x0F, 0x00, 0xFF, 0xFF,
+        ];
+
+        let frame = RMWireFrameView::new(&buf);
+
+        assert_eq!(frame.sender_id(), 0x09);
+        assert_eq!(frame.receiver_id(), 0x18);
+
+        assert_eq!(frame.packet_length_field(), 0x1A);
+        assert_eq!(frame.sequence_number(), 0xFFFF);
+        assert_eq!(
+            frame.cmd_set(),
+            crate::duss::cmd_set_types::CommandSetType::RM as u8
+        );
+        assert_eq!(
+            frame.cmd_id(),
+            crate::duss::cmd_set_rm::RMCommandType::ARMOR_LED_SET as u8
+        );
+        assert_eq!(
+            frame.payload(),
+            &[0x01, 0xFF, 0x00, 0x00, 0x00, 0xFF, 0x00, 0xC8, 0x00, 0xC8, 0x00, 0x0F, 0x00]
+        );
+    }
+
+    #[test]
+    fn test_shoot_gel_gun() {
+        let buf = [
+            0x55, 0x0E, 0x04, 0xFF, 0x09, 0x17, 0xFF, 0xFF, 0x00, 0x3F, 0x51, 0x01, 0xFF, 0xFF,
+        ];
+        let frame = RMWireFrameView::new(&buf);
+
+        assert_eq!(frame.sender_id(), 0x09);
+        assert_eq!(frame.receiver_id(), 0x17);
+        assert_eq!(frame.packet_length_field(), 0x0E);
+
+        assert_eq!(
+            frame.cmd_set(),
+            crate::duss::cmd_set_types::CommandSetType::RM as u8
+        );
+        assert_eq!(
+            frame.cmd_id(),
+            crate::duss::cmd_set_rm::RMCommandType::SHOOT_CMD as u8
+        );
+        assert_eq!(frame.payload(), &[0x01]);
+    }
+
+    #[test]
+    fn test_gimbal_set_angle_robostack() {
+        let buf = [
+            0x55, 0x14, 0x04, 0xFF, 0x09, 0x04, 0xFF, 0xFF, 0x00, 0x04, 0x69, 0x08, 0x05, 0x00,
+            0x00, 0x00, 0x00, 0x6D, 0xFF, 0xFF,
+        ];
+
+        let frame = RMWireFrameView::new(&buf);
+
+        assert_eq!(frame.sender_id(), 0x09);
+        assert_eq!(frame.receiver_id(), 0x04);
+        assert_eq!(frame.packet_length_field(), 0x14);
+        assert_eq!(
+            frame.cmd_set(),
+            crate::duss::cmd_set_types::CommandSetType::GIMBAL as u8
+        );
+        assert_eq!(frame.cmd_id(), 0x69);
+
+        std::println!("{:0x?}", frame.payload())
     }
 
     #[test]

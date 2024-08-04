@@ -94,7 +94,7 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> RMAddSubView<T> {}
 mod test {
     extern crate std;
 
-    use crate::vbus::{CMDID_VBUS_ADD_SUB, CMDSET_VBUS};
+    use crate::duss::vbus::{CMDID_VBUS_ADD_SUB, CMDSET_VBUS};
 
     use super::*;
 
@@ -121,7 +121,7 @@ mod test {
         let packet = RMWireFrameView::new(&buf);
         let topic = RMTopicView::new(packet);
 
-        assert_eq!(topic.packet.cmd_set(), crate::vbus::CMDSET_VBUS);
+        assert_eq!(topic.packet.cmd_set(), crate::duss::vbus::CMDSET_VBUS);
         assert_eq!(topic.packet.is_valid(), true);
         assert_eq!(topic.sub_mode(), 0x00);
         assert_eq!(topic.sub_id(), 0x00); // Subscribe Session ID
@@ -178,8 +178,11 @@ mod test {
         let packet = RMWireFrameView::new(&buf);
         let addsub_view = RMAddSubView::new(packet);
 
-        assert_eq!(addsub_view.packet.cmd_set(), crate::vbus::CMDSET_VBUS);
-        assert_eq!(addsub_view.packet.cmd_id(), crate::vbus::CMDID_VBUS_ADD_SUB);
+        assert_eq!(addsub_view.packet.cmd_set(), crate::duss::vbus::CMDSET_VBUS);
+        assert_eq!(
+            addsub_view.packet.cmd_id(),
+            crate::duss::vbus::CMDID_VBUS_ADD_SUB
+        );
 
         assert_eq!(addsub_view.packet.is_valid(), true);
 
@@ -315,15 +318,15 @@ mod test {
         let topics = init_view.topics().unwrap();
         assert_eq!(
             topics[0].uid,
-            crate::vbus::topics::VBUS_ESC_STATE // Wheel encoders
+            crate::duss::vbus::topics::VBUS_ESC_STATE // Wheel encoders
         );
         assert_eq!(
             topics[1].uid,
-            crate::vbus::topics::VBUS_BASE_POSITION // Bast Position
+            crate::duss::vbus::topics::VBUS_BASE_POSITION // Bast Position
         );
         assert_eq!(
             topics[2].uid,
-            crate::vbus::topics::VBUS_IMU_DATA // IMU Data
+            crate::duss::vbus::topics::VBUS_IMU_DATA // IMU Data
         );
         assert_eq!(
             topics[3].uid,

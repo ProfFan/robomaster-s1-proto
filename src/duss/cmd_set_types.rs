@@ -1,8 +1,9 @@
 /// DUML Command Sets
+use num_enum::TryFromPrimitive;
 
 #[allow(non_camel_case_types)]
 #[repr(u8)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, TryFromPrimitive)]
 pub enum CommandSetType {
     COMMON = 0,
     SPECIAL = 1,
@@ -30,7 +31,7 @@ pub enum CommandSetType {
     WATCH = 23,
     PERCEPTION = 36,
     ROBOTIC_ARM = 51,
-    RM = 63,
-    VIRTUAL_BUS = 72,
+    RM = 0x3F,
+    VIRTUAL_BUS = 0x48,
     MAX = 33,
 }

@@ -2,7 +2,7 @@ use std::{collections::HashMap, io::BufRead, path::PathBuf};
 
 use candump_parse;
 use chumsky::Parser;
-use robomaster_s1_proto;
+use robomaster_s1_proto::{self, duss::cmd_set_types::CommandSetType};
 
 use clap::Parser as ClapParser;
 
@@ -27,10 +27,11 @@ fn show_buf<B: AsRef<[u8]>>(buf: B) -> String {
 fn print_packet(id: u32, packet: &[u8]) {
     let view = robomaster_s1_proto::wire::RMWireFrameView::new(packet);
     if view.is_valid() {
-        if view.cmd_set() == robomaster_s1_proto::vbus::CMDSET_VBUS {
+        if view.cmd_set() == robomaster_s1_proto::duss::vbus::CMDSET_VBUS {
             match view.cmd_id() {
-                robomaster_s1_proto::vbus::CMDID_VBUS_ADD_SUB => {
-                    let topic_view = robomaster_s1_proto::vbus::topic_view::RMAddSubView::new(view);
+                robomaster_s1_proto::duss::vbus::CMDID_VBUS_ADD_SUB => {
+                    let topic_view =
+                        robomaster_s1_proto::duss::vbus::topic_view::RMAddSubView::new(view);
                     println!(
                         "{:#0x}: VBUS Add Sub: STR {}, {}{}, {:02x?}",
                         id,
@@ -44,14 +45,14 @@ fn print_packet(id: u32, packet: &[u8]) {
                         topic_view.topics()
                     );
                 }
-                robomaster_s1_proto::vbus::CMDID_VBUS_DEL_SUB => {
+                robomaster_s1_proto::duss::vbus::CMDID_VBUS_DEL_SUB => {
                     println!("{:#0x}: VBUS Del Sub: {:02x?}", id, view.payload());
                 }
-                robomaster_s1_proto::vbus::CMDID_VBUS_RESET_NODE => {
+                robomaster_s1_proto::duss::vbus::CMDID_VBUS_RESET_NODE => {
                     println!("{:#0x}: VBUS Reset Node {}", id, view.receiver_id());
                 }
-                robomaster_s1_proto::vbus::CMDID_VBUS_PUSH_MSG => {
-                    let topic_view = robomaster_s1_proto::vbus::RMTopicView::new(view);
+                robomaster_s1_proto::duss::vbus::CMDID_VBUS_PUSH_MSG => {
+                    let topic_view = robomaster_s1_proto::duss::vbus::RMTopicView::new(view);
                     if topic_view.sub_mode() == 0 {
                         println!(
                             "{:#0x}: VBUS PUSH Stream: {}, {}{}, DATA {:02x?}",
@@ -93,13 +94,13 @@ fn print_packet(id: u32, packet: &[u8]) {
             }
         } else {
             println!(
-                "{:#0x}: {:02x} to {:02x}, {}{}, CS {:02x}, CMD {:02x}, {}",
+                "{:#0x}: {:02x} to {:02x}, {}{}, CS {:?}, CMD {:02x}, {}",
                 id,
                 view.sender_id(),
                 view.receiver_id(),
                 if view.need_ack() { "A" } else { "_" },
                 if view.is_ack() { "K" } else { "_" },
-                view.cmd_set(),
+                CommandSetType::try_from(view.cmd_set()),
                 view.cmd_id(),
                 show_buf(view.payload())
             );
