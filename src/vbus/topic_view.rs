@@ -1,7 +1,7 @@
 use crate::wire::RMWireFrameView;
 use bytemuck::{self};
 
-use super::topics::DdsUid;
+use super::topics::VBusUid;
 
 /// Published Topic Packet
 pub struct RMTopicView<T: AsRef<[u8]>> {
@@ -34,7 +34,7 @@ impl<T: AsRef<[u8]>> RMTopicView<T> {
 ///
 /// For subscribing to the yaw/pitch/roll topic (UID 0x42, 0xee, 0x13, 0x1d, 0x03, 0x00, 0x02, 0x00).
 /// We send a packet to the subcontroller with the following payload:
-/// - Header: CMDSET_DDS, CMDID_DDS_ADD_SUB
+/// - Header: CMDSET_VBUS, CMDID_VBUS_ADD_SUB
 /// - Payload:
 ///     - My node ID (Base, 0x09)
 ///     - My stream ID (any unused stream ID)
@@ -76,7 +76,7 @@ impl<T: AsRef<[u8]>> RMAddSubView<T> {
         self.packet.payload()[4]
     }
 
-    pub fn topics(&self) -> Option<&[DdsUid]> {
+    pub fn topics(&self) -> Option<&[VBusUid]> {
         let payload = self.packet.payload();
         bytemuck::try_cast_slice(&payload[5..payload.len() - 2]).ok()
     }
@@ -94,7 +94,7 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> RMAddSubView<T> {}
 mod test {
     extern crate std;
 
-    use crate::vbus::{CMDID_DDS_ADD_SUB, CMDSET_DDS};
+    use crate::vbus::{CMDID_VBUS_ADD_SUB, CMDSET_VBUS};
 
     use super::*;
 
@@ -121,7 +121,7 @@ mod test {
         let packet = RMWireFrameView::new(&buf);
         let topic = RMTopicView::new(packet);
 
-        assert_eq!(topic.packet.cmd_set(), crate::vbus::CMDSET_DDS);
+        assert_eq!(topic.packet.cmd_set(), crate::vbus::CMDSET_VBUS);
         assert_eq!(topic.packet.is_valid(), true);
         assert_eq!(topic.sub_mode(), 0x00);
         assert_eq!(topic.sub_id(), 0x00); // Subscribe Session ID
@@ -178,8 +178,8 @@ mod test {
         let packet = RMWireFrameView::new(&buf);
         let addsub_view = RMAddSubView::new(packet);
 
-        assert_eq!(addsub_view.packet.cmd_set(), crate::vbus::CMDSET_DDS);
-        assert_eq!(addsub_view.packet.cmd_id(), crate::vbus::CMDID_DDS_ADD_SUB);
+        assert_eq!(addsub_view.packet.cmd_set(), crate::vbus::CMDSET_VBUS);
+        assert_eq!(addsub_view.packet.cmd_id(), crate::vbus::CMDID_VBUS_ADD_SUB);
 
         assert_eq!(addsub_view.packet.is_valid(), true);
 
@@ -252,12 +252,12 @@ mod test {
         let init2_view = RMAddSubView::new(packet2);
         let init4_view = RMAddSubView::new(packet4);
 
-        assert_eq!(packet1.cmd_set(), CMDSET_DDS);
+        assert_eq!(packet1.cmd_set(), CMDSET_VBUS);
         assert_eq!(packet1.cmd_id(), 0x01);
         assert_eq!(packet1.packet_length_field(), 0x12);
 
-        assert_eq!(init2_view.packet.cmd_set(), CMDSET_DDS);
-        assert_eq!(init2_view.packet.cmd_id(), CMDID_DDS_ADD_SUB);
+        assert_eq!(init2_view.packet.cmd_set(), CMDSET_VBUS);
+        assert_eq!(init2_view.packet.cmd_id(), CMDID_VBUS_ADD_SUB);
         assert_eq!(init2_view.num_topics(), 1);
         assert_eq!(init2_view.sub_node_id(), 0x09);
         assert_eq!(init2_view.sub_mode(), 0x00);
@@ -270,7 +270,7 @@ mod test {
             [0xfb, 0xdc, 0xf5, 0xd7, 0x03, 0x00, 0x02, 0x00] // Battery
         );
 
-        assert_eq!(packet3.cmd_set(), CMDSET_DDS);
+        assert_eq!(packet3.cmd_set(), CMDSET_VBUS);
         assert_eq!(packet3.cmd_id(), 0x01);
 
         assert_eq!(init4_view.num_topics(), 2);
@@ -303,8 +303,8 @@ mod test {
         let packet = RMWireFrameView::new(&buf);
         let init_view = RMAddSubView::new(packet);
 
-        assert_eq!(init_view.packet.cmd_set(), CMDSET_DDS);
-        assert_eq!(init_view.packet.cmd_id(), CMDID_DDS_ADD_SUB);
+        assert_eq!(init_view.packet.cmd_set(), CMDSET_VBUS);
+        assert_eq!(init_view.packet.cmd_id(), CMDID_VBUS_ADD_SUB);
 
         assert_eq!(init_view.num_topics(), 5);
         assert_eq!(init_view.frequency(), 5);
@@ -315,15 +315,15 @@ mod test {
         let topics = init_view.topics().unwrap();
         assert_eq!(
             topics[0].uid,
-            crate::vbus::topics::DDS_ESC_STATE // Wheel encoders
+            crate::vbus::topics::VBUS_ESC_STATE // Wheel encoders
         );
         assert_eq!(
             topics[1].uid,
-            crate::vbus::topics::DDS_BASE_POSITION // Bast Position
+            crate::vbus::topics::VBUS_BASE_POSITION // Bast Position
         );
         assert_eq!(
             topics[2].uid,
-            crate::vbus::topics::DDS_IMU_DATA // IMU Data
+            crate::vbus::topics::VBUS_IMU_DATA // IMU Data
         );
         assert_eq!(
             topics[3].uid,
