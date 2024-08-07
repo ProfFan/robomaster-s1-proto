@@ -2,7 +2,12 @@ use std::{collections::HashMap, io::BufRead, path::PathBuf};
 
 use candump_parse;
 use chumsky::Parser;
-use robomaster_s1_proto::{self, duss::cmd_set_types::CommandSetType};
+use robomaster_s1_proto::{
+    self,
+    duss::{
+        cmd_set_gimbal::GimbalCommandType, cmd_set_rm::RMCommandType, cmd_set_types::CommandSetType,
+    },
+};
 
 use clap::Parser as ClapParser;
 
@@ -10,7 +15,7 @@ use clap::Parser as ClapParser;
 #[derive(ClapParser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    input: PathBuf,
+    input: Option<PathBuf>,
 }
 
 fn show_buf<B: AsRef<[u8]>>(buf: B) -> String {
@@ -33,8 +38,10 @@ fn print_packet(id: u32, packet: &[u8]) {
                     let topic_view =
                         robomaster_s1_proto::duss::vbus::topic_view::RMAddSubView::new(view);
                     println!(
-                        "{:#0x}: VBUS Add Sub: STR {}, {}{}, {:02x?}",
+                        "{:#0x}: {:02x} to {:02x}, VBUS Add Sub: STR {}, {}{}, {:02x?}",
                         id,
+                        topic_view.packet.sender_id(),
+                        topic_view.packet.receiver_id(),
                         topic_view.sub_stream_id(),
                         if topic_view.packet.need_ack() {
                             "A"
@@ -92,6 +99,34 @@ fn print_packet(id: u32, packet: &[u8]) {
                     );
                 }
             }
+        } else if view.cmd_set()
+            == robomaster_s1_proto::duss::cmd_set_types::CommandSetType::RM as u8
+        {
+            println!(
+                "{:#0x}: {:02x} to {:02x}, {}{}, CS {:?}, CMD {:?}, {}",
+                id,
+                view.sender_id(),
+                view.receiver_id(),
+                if view.need_ack() { "A" } else { "_" },
+                if view.is_ack() { "K" } else { "_" },
+                CommandSetType::try_from(view.cmd_set()),
+                RMCommandType::try_from(view.cmd_id()),
+                show_buf(view.payload())
+            );
+        } else if view.cmd_set()
+            == robomaster_s1_proto::duss::cmd_set_types::CommandSetType::GIMBAL as u8
+        {
+            println!(
+                "{:#0x}: {:02x} to {:02x}, {}{}, CS {:?}, CMD {:?}, {}",
+                id,
+                view.sender_id(),
+                view.receiver_id(),
+                if view.need_ack() { "A" } else { "_" },
+                if view.is_ack() { "K" } else { "_" },
+                CommandSetType::try_from(view.cmd_set()),
+                GimbalCommandType::try_from(view.cmd_id()),
+                show_buf(view.payload())
+            );
         } else {
             println!(
                 "{:#0x}: {:02x} to {:02x}, {}{}, CS {:?}, CMD {:02x}, {}",
@@ -106,18 +141,21 @@ fn print_packet(id: u32, packet: &[u8]) {
             );
         }
     } else {
-        println!("Invalid packet");
+        println!("Invalid packet {:0x?}", view);
     }
 }
 
 fn main() {
     let args = Args::parse();
 
-    // Open a file reader (line-by-line)
-    let file = std::fs::File::open(&args.input).unwrap();
+    let mut reader: Box<dyn BufRead> = if args.input == None {
+        Box::new(std::io::BufReader::new(std::io::stdin()))
+    } else {
+        // Open a file reader (line-by-line)
+        let file = std::fs::File::open(&args.input.unwrap()).unwrap();
 
-    let mut reader = std::io::BufReader::new(file);
-
+        Box::new(std::io::BufReader::new(file))
+    };
     // Each CAN node id has a buffer
     let mut buffers: HashMap<u32, Vec<u8>> = HashMap::new();
 

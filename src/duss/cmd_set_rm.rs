@@ -1,6 +1,8 @@
+use num_enum::TryFromPrimitive;
+
 #[allow(non_camel_case_types)]
 #[repr(u8)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, TryFromPrimitive)]
 pub enum RMCommandType {
     HIT_EVENT = 0x02,
     SPECIAL_CONTROL = 0x04,

@@ -6,9 +6,6 @@
 use crate::crc::{rm_s1_crc16, rm_s1_crc8};
 
 const SOF: u8 = 0x55;
-const BASE_ID: u8 = 0x09;
-const SUBCONTROLLER_ID: u8 = 0x03;
-const CMDSET_LOG: u8 = 0xf0;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParseError {

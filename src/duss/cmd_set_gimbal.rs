@@ -1,6 +1,8 @@
+use num_enum::TryFromPrimitive;
+
 #[allow(non_camel_case_types)]
-#[repr(C)]
-#[derive(Debug, Clone, Copy)]
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, TryFromPrimitive)]
 pub enum GimbalCommandType {
     GIMBAL_RESERVED = 0x00,
     GIMBAL_CONTROL = 0x01,
@@ -31,4 +33,26 @@ pub enum GimbalCommandType {
 
     // 0x69 from RoboStackS1, set gimbal angle
     GIMBAL_SET_ANGLES = 0x69,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{duss::cmd_set_types::CommandSetType, wire::RMWireFrameView};
+
+    #[test]
+
+    fn test_gimbal_command() {
+        let cmd = [
+            0x55, 0x14, 0x04, 0xFF, 0x09, 0x04, 0xFF, 0xFF, 0x00, 0x04, 0x69, 0x08, 0x05, 0x00,
+            0x00, 0x00, 0x00, 0x6D, 0xFF, 0xFF,
+        ];
+
+        let result = RMWireFrameView::new(cmd);
+
+        assert_eq!(result.sender_id(), 0x09);
+        assert_eq!(result.receiver_id(), 0x04);
+        assert_eq!(result.cmd_set(), CommandSetType::GIMBAL as u8);
+        assert_eq!(result.cmd_id(), GimbalCommandType::GIMBAL_SET_ANGLES as u8);
+    }
 }

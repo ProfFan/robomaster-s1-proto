@@ -322,7 +322,7 @@ mod test {
         );
         assert_eq!(
             topics[1].uid,
-            crate::duss::vbus::topics::VBUS_BASE_POSITION // Bast Position
+            crate::duss::vbus::topics::VBUS_BASE_POSITION // Base Position
         );
         assert_eq!(
             topics[2].uid,

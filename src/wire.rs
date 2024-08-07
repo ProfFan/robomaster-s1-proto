@@ -18,8 +18,6 @@
 //! - Payload (variable length)
 //! - Payload CRC16 (2 bytes)
 
-use core::ops::BitAnd;
-
 #[derive(PartialEq, Eq, Clone)]
 pub struct RMWireFrameView<T: AsRef<[u8]>> {
     buf: T,
@@ -40,9 +38,6 @@ impl<T: AsRef<[u8]>> RMWireFrameView<T> {
             return false;
         }
         if buffer.len() < self.packet_length_field() as usize {
-            return false;
-        }
-        if buffer[2].bitand(0x04) == 0 {
             return false;
         }
         if self.header_crc8() != crate::crc::rm_s1_crc8(&buffer[0..3]) {
@@ -199,6 +194,12 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> RMWireFrameView<T> {
         let buffer = self.buf.as_mut();
         buffer[3] = crate::crc::rm_s1_crc8(&buffer[0..3]);
     }
+
+    pub fn payload_mut(&mut self) -> &mut [u8] {
+        let buffer = self.buf.as_mut();
+        let payload_end = buffer.len() - 2;
+        &mut buffer[11..payload_end]
+    }
 }
 
 #[cfg(test)]
@@ -247,11 +248,13 @@ mod tests {
 
     #[test]
     fn test_heartbeat_msg() {
-        // The so call heartbeat message is actually a RMC (RM Control) message
+        // The so call heartbeat message is actually a RMC (ReMote Control) message
         let buf = [
             0x55, 0x1B, 0x04, 0x75, 0x09, 0xC3, 0xE0, 0x00, 0x00, 0x3F, 0x60, 0x00, 0x04, 0x20,
             0x00, 0x01, 0x00, 0x40, 0x00, 0x02, 0x10, 0x04, 0x03, 0x00, 0x04, 0xFA, 0xF0,
         ];
+        // RM DBUS: 0x00, 0x04, 0x20, 0x00, 0x01, 0xD8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        // Payload: 0x00, 0x04, 0x20, 0x00, 0x01, 0x00, 0x40, 0x00, 0x02, 0x10, 0x04, 0x03, 0x00, 0x04, 0xFA, 0xF0,
 
         let frame = RMWireFrameView::new(&buf);
 
@@ -276,6 +279,38 @@ mod tests {
 
         let crc16_calculated = crate::crc::rm_crc16(0x3692, &buf[..buf.len() - 2]);
         assert_eq!(crc16_calculated, 0xF0FA);
+
+        let my_payload_normal_mode = b"\x00\x04 \x00\x01\x08@\x00\x02\x10\x04\x00\x00\x04";
+        assert_ne!(frame.payload(), my_payload_normal_mode);
+
+        let payload = my_payload_normal_mode;
+        // 11-bit Unsigned S-BUS RC data
+        // Bit 0-10: Channel 0
+        // Bit 11-21: Channel 1
+        // Bit 22-32: Channel 2
+        // Bit 33-43: Channel 3
+        let rc_ch0 = payload[0] as u16 | ((payload[1] as u16) << 8) & 0x7FF;
+        let rc_ch1 = payload[1] as u16 >> 3 | ((payload[2] as u16) << 5) & 0x7FF;
+        let rc_ch2 = payload[2] as u16 >> 6
+            | ((payload[3] as u16) << 2)
+            | ((payload[4] as u16) << 10) & 0x7FF;
+        let rc_ch3 = payload[4] as u16 >> 1 | ((payload[5] as u16) << 7) & 0x7FF;
+        // Bit 44-54: Channel 4
+        let rc_ang_z = (payload[5] & 0xF0) as u16 >> 4 | ((payload[6] as u16) << 4) & 0x7FF;
+        // Bit 55-65: Channel 5
+        let rc_ch5 = payload[6] as u16 >> 7
+            | ((payload[7] as u16) << 1)
+            | ((payload[8] as u16) << 9) & 0x7FF;
+        // Bit 66-76: Channel 6
+        let rc_ch6 = payload[8] as u16 >> 2 | ((payload[9] as u16) << 6) & 0x7FF;
+
+        assert_eq!(rc_ch0, 1024);
+        assert_eq!(rc_ch1, 1024);
+        assert_eq!(rc_ch2, 1024);
+        assert_eq!(rc_ch3, 1024);
+        assert_eq!(rc_ang_z, 1024);
+        assert_eq!(rc_ch5, 1024);
+        assert_eq!(rc_ch6, 1024);
     }
 
     #[test]
