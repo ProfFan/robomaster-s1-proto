@@ -75,12 +75,6 @@ mod tests {
         assert_eq!(work_mode_set.mode(), GimbalMode::Free); // Free Mode
         assert_eq!(work_mode_set.cmd(), 0x00); // Always 0x00
 
-        // std::println!(
-        //     "CRC8: {:0x}, CRC16: {:0x}",
-        //     work_mode_set.packet.crc8_computed(),
-        //     work_mode_set.packet.crc16_computed()
-        // );
-
         assert_eq!(work_mode_set.is_valid(), true);
     }
 }

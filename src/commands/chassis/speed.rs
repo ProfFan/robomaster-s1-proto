@@ -3,7 +3,13 @@ use crate::{
     wire::RMWireFrameView,
 };
 
-/// Chassis peed vector control packet
+/// Chassis speed vector control packet
+///
+/// # Notes
+///
+/// Maximum speed as defined by the RM-S1 is +/- 3.5 m/s.
+///
+/// Maximum angular velocity as defined by the RM-S1 is +/- 600 degrees/s.
 #[derive(Debug)]
 pub struct SpeedSetView<T: AsRef<[u8]>> {
     pub packet: RMWireFrameView<T>,
