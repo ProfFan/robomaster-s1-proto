@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Fan Jiang"]
 license = "MIT OR Apache-2.0"
 description = "Rust implementation of the RoboMaster S1 CAN protocol"
-keywords = ["robomaster", "s1", "can", "protocol", "robotics", "no_std"]
+keywords = ["robomaster", "protocol", "can", "robotics", "no_std"]
 readme = "README.md"
 
 [dependencies]
