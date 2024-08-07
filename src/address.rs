@@ -50,7 +50,12 @@ pub enum RMS1Address {
     robotic_arm_id = 2702,
 }
 
-/// HostID to PackID
+/// HostID to Packet ID (Short Address)
+///
+/// The Packet ID (Short Address) is a 1-byte value that is used to identify the sender and receiver of a packet.
+/// The Packet ID is derived from the Host ID and is used in the DUSS CAN frame header.
+///
+/// Python Implementation:
 ///
 /// ```python
 /// def hostid2packid(host_id):
@@ -95,11 +100,27 @@ mod test {
         assert_eq!(hostid2packid(2400), 0x18);
         // ARMOR1 = 2401
         assert_eq!(hostid2packid(2401), 0x38);
+        // ARMOR2 = 2402
+        assert_eq!(hostid2packid(2402), 0x58);
+        // ARMOR3 = 2403
+        assert_eq!(hostid2packid(2403), 0x78);
+        // ARMOR4 = 2404
+        assert_eq!(hostid2packid(2404), 0x98);
+        // ARMOR5 = 2405
+        assert_eq!(hostid2packid(2405), 0xB8);
+        // ARMOR6 = 2406
+        assert_eq!(hostid2packid(2406), 0xD8);
         // ESC0 = 1200
         assert_eq!(hostid2packid(1200), 0x0C);
         // ESC1 = 1201
         assert_eq!(hostid2packid(1201), 0x2C);
         // ESC2 = 1202
         assert_eq!(hostid2packid(1202), 0x4C);
+        // ESC3 = 1203
+        assert_eq!(hostid2packid(1203), 0x6C);
+        // BLACKBOX = 2900
+        assert_eq!(hostid2packid(2900), 0x1D);
+        // SENSOR_ADAPTER = 2200
+        assert_eq!(hostid2packid(2200), 0x16);
     }
 }

@@ -32,17 +32,18 @@ pub enum GimbalCommandType {
     GIMBAL_ROTATE_EXP_CMD = 0x68,
 
     // 0x69 from RoboStackS1, set gimbal angle
-    GIMBAL_SET_ANGLES = 0x69,
+    GIMBAL_SET_VEL = 0x69,
 }
 
 #[cfg(test)]
 mod tests {
+    extern crate std;
     use super::*;
     use crate::{duss::cmd_set_types::CommandSetType, wire::RMWireFrameView};
 
     #[test]
 
-    fn test_gimbal_command() {
+    fn test_gimbal_vel_command() {
         let cmd = [
             0x55, 0x14, 0x04, 0xFF, 0x09, 0x04, 0xFF, 0xFF, 0x00, 0x04, 0x69, 0x08, 0x05, 0x00,
             0x00, 0x00, 0x00, 0x6D, 0xFF, 0xFF,
@@ -53,6 +54,12 @@ mod tests {
         assert_eq!(result.sender_id(), 0x09);
         assert_eq!(result.receiver_id(), 0x04);
         assert_eq!(result.cmd_set(), CommandSetType::GIMBAL as u8);
-        assert_eq!(result.cmd_id(), GimbalCommandType::GIMBAL_SET_ANGLES as u8);
+        assert_eq!(result.cmd_id(), GimbalCommandType::GIMBAL_SET_VEL as u8);
+
+        let angular_y = i16::from_le_bytes([result.payload()[2], result.payload()[3]]);
+        let angular_z = i16::from_le_bytes([result.payload()[4], result.payload()[5]]);
+
+        assert_eq!(angular_y, 0);
+        assert_eq!(angular_z, 0);
     }
 }
