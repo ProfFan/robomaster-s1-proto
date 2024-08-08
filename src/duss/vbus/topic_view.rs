@@ -121,6 +121,7 @@ mod test {
         let packet = RMWireFrameView::new(&buf);
         let topic = RMTopicView::new(packet);
 
+        assert_eq!(topic.data().len(), 34);
         assert_eq!(topic.packet.cmd_set(), crate::duss::vbus::CMDSET_VBUS);
         assert_eq!(topic.packet.is_valid(), true);
         assert_eq!(topic.sub_mode(), 0x00);

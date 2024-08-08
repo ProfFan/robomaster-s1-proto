@@ -62,8 +62,10 @@ fn print_packet(id: u32, packet: &[u8]) {
                     let topic_view = robomaster_s1_proto::duss::vbus::RMTopicView::new(view);
                     if topic_view.sub_mode() == 0 {
                         println!(
-                            "{:#0x}: VBUS PUSH Stream: {}, {}{}, DATA {:02x?}",
+                            "{:#0x}: {:02x} to {:02x}, VBUS PUSH Stream: {}, {}{}, DATA({}) {:02x?}",
                             id,
+                            topic_view.packet.sender_id(),
+                            topic_view.packet.receiver_id(),
                             topic_view.sub_id(),
                             if topic_view.packet.need_ack() {
                                 "A"
@@ -71,6 +73,7 @@ fn print_packet(id: u32, packet: &[u8]) {
                                 "_"
                             },
                             if topic_view.packet.is_ack() { "K" } else { "_" },
+                            topic_view.data().len(),
                             topic_view.data()
                         );
                     } else {
