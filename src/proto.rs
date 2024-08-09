@@ -48,8 +48,8 @@ pub fn parse_frame(buffer: &[u8]) -> Result<(&[u8], usize), ParseError> {
     }
 
     // Check if we have enough data to read the frame header
-    if idx + 3 >= buffer.len() {
-        return Err(ParseError::NeedMoreData(3, idx));
+    if idx + 4 > buffer.len() {
+        return Err(ParseError::NeedMoreData(4 - (buffer.len() - idx), idx));
     }
 
     // Read the frame length

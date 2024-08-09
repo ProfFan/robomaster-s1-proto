@@ -1,7 +1,7 @@
 use std::{collections::HashMap, io::BufRead, path::PathBuf};
 
 use candump_parse;
-use chumsky::Parser;
+use chumsky::{chain::Chain, Parser};
 use robomaster_s1_proto::{
     self,
     duss::{
@@ -176,7 +176,7 @@ fn print_packet(id: u32, packet: &[u8]) {
 fn main() {
     let args = Args::parse();
 
-    let mut reader: Box<dyn BufRead> = if args.input == None {
+    let reader: Box<dyn BufRead> = if args.input == None {
         Box::new(std::io::BufReader::new(std::io::stdin()))
     } else {
         // Open a file reader (line-by-line)
@@ -188,17 +188,33 @@ fn main() {
     let mut buffers: HashMap<u32, Vec<u8>> = HashMap::new();
 
     // Parse each line
-    let mut line = String::new();
-    let parser = candump_parse::parser();
-    while reader.read_line(&mut line).unwrap() > 0 {
-        let result = parser.parse(line.as_str());
+    let mut bytes_needed: HashMap<u32, Option<usize>> = HashMap::new();
+    for line in reader.lines() {
+        let line = if let Ok(line) = line {
+            line
+        } else {
+            continue;
+        };
+        let parser = candump_parse::parser();
+        let result = parser.parse(line);
         match result {
             Ok(frame) => {
                 let id = frame.id;
-                let buf = buffers.entry(id).or_default();
+                let buf: &mut Vec<u8> = buffers.entry(id).or_default();
 
                 // Append the data to the buffer
                 buf.extend_from_slice(&frame.data);
+
+                // eprintln!("{:0x}: buf: {:0x?}", id, buf.as_slice());
+
+                let bytes_needed_id = bytes_needed.entry(id).or_insert(None);
+                if let Some(needed) = bytes_needed_id {
+                    if Vec::len(buf) < *needed {
+                        continue;
+                    }
+                }
+
+                *bytes_needed_id = None;
 
                 // Try to parse the RM-S1 frame
                 let result = robomaster_s1_proto::proto::parse_frame(buf.as_slice());
@@ -208,11 +224,13 @@ fn main() {
                         print_packet(id, &packet);
                         buf.drain(0..consumed);
                     }
-                    Err(robomaster_s1_proto::proto::ParseError::NeedMoreData(_, _)) => {
-                        // eprintln!("Need more data: {}", needed);
+                    Err(robomaster_s1_proto::proto::ParseError::NeedMoreData(needed, consumed)) => {
+                        // eprintln!("Need more data: {}, consumed: {}", needed, consumed);
+                        buf.drain(0..consumed);
+                        *bytes_needed_id = Some(needed + Vec::len(buf));
                     }
                     Err(robomaster_s1_proto::proto::ParseError::NoStartOfFrame) => {
-                        // eprintln!("No start of frame");
+                        eprintln!("No start of frame");
                         // Drain the buffer
                         buf.clear();
                     }
@@ -230,6 +248,5 @@ fn main() {
                 eprintln!("Error: {:?}", e);
             }
         }
-        line.clear();
     }
 }
