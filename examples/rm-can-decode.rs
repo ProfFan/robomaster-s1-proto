@@ -17,6 +17,8 @@ use clap::Parser as ClapParser;
 #[derive(ClapParser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
+    /// The input file to parse.
+    /// If not provided, will read from `stdin`.
     input: Option<PathBuf>,
 }
 
@@ -108,10 +110,11 @@ fn print_packet(id: u32, packet: &[u8]) {
             == robomaster_s1_proto::duss::cmd_set_types::CommandSetType::RM as u8
         {
             println!(
-                "{:#0x}: {:02x} to {:02x}, {}{}, CS {:?}, CMD {:?}, {}",
+                "{:#0x}: {:02x} to {:02x}, #{}, {}{}, CS {:?}, CMD {:?}, {}",
                 id,
                 view.sender_id(),
                 view.receiver_id(),
+                view.sequence_number(),
                 if view.need_ack() { "A" } else { "_" },
                 if view.is_ack() { "K" } else { "_" },
                 CommandSetType::try_from(view.cmd_set()),
@@ -122,10 +125,11 @@ fn print_packet(id: u32, packet: &[u8]) {
             == robomaster_s1_proto::duss::cmd_set_types::CommandSetType::GIMBAL as u8
         {
             println!(
-                "{:#0x}: {:02x} to {:02x}, {}{}, CS {:?}, CMD {:?}, {}",
+                "{:#0x}: {:02x} to {:02x}, #{} {}{}, CS {:?}, CMD {:?}, {}",
                 id,
                 view.sender_id(),
                 view.receiver_id(),
+                view.sequence_number(),
                 if view.need_ack() { "A" } else { "_" },
                 if view.is_ack() { "K" } else { "_" },
                 CommandSetType::try_from(view.cmd_set()),
@@ -185,8 +189,9 @@ fn main() {
 
     // Parse each line
     let mut line = String::new();
+    let parser = candump_parse::parser();
     while reader.read_line(&mut line).unwrap() > 0 {
-        let result = candump_parse::parser().parse(line.as_str());
+        let result = parser.parse(line.as_str());
         match result {
             Ok(frame) => {
                 let id = frame.id;

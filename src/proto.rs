@@ -19,6 +19,19 @@ pub enum ParseError {
     InvalidPacketCRC(usize),
 }
 
+/// Try to parse a frame from the buffer
+///
+/// This function will:
+/// - Find the start of frame
+/// - Read the frame length
+/// - Check the header CRC
+/// - Check if we have enough data to read the whole frame
+/// - Check the packet CRC
+///
+/// If the frame is valid, it will return the frame and the number of bytes consumed
+///
+/// If the frame is invalid, it will return an error, and the number of bytes that need to be dropped.
+/// This allows the caller to skip the invalid bytes and try to parse the next frame.
 pub fn parse_frame(buffer: &[u8]) -> Result<(&[u8], usize), ParseError> {
     let mut idx = 0;
 

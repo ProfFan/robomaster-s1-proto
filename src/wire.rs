@@ -141,6 +141,9 @@ impl<T: AsRef<[u8]>> RMWireFrameView<T> {
 /// Debug formatter for RMWireFrameView
 impl<T: AsRef<[u8]>> core::fmt::Debug for RMWireFrameView<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        if self.buf.as_ref().len() < 13 {
+            return write!(f, "RMWireFrameView {{ invalid }}");
+        }
         f.debug_struct("RMWireFrameView")
             .field("sender_id", &self.sender_id())
             .field("receiver_id", &self.receiver_id())
@@ -231,6 +234,8 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> RMWireFrameView<T> {
 #[cfg(test)]
 mod tests {
     extern crate std;
+    use crate::duss::cmd_set_gimbal::GimbalCommandType;
+
     use super::*;
 
     #[test]
@@ -257,6 +262,28 @@ mod tests {
     }
 
     #[test]
+    fn test_not_enough_bytes() {
+        let buf: [u8; 12] = [
+            0x55, 0x24, 0x04, 0x40, 0x58, 0x1d, 0x00, 0x00, //
+            0x00, 0x00, 0xf0, 0x00,
+        ];
+        let frame = RMWireFrameView::new(&buf);
+
+        assert_eq!(frame.is_valid(), false);
+    }
+
+    #[test]
+    fn test_invalid_header() {
+        let buf = [
+            0x35, 0x0E, 0x04, 0x66, 0x09, 0x03, 0x4E, 0x06, 0xA0, 0x48, 0x08, 0x01, 0xC2, 0xE8,
+        ];
+
+        let frame = RMWireFrameView::new(&buf);
+
+        assert_eq!(frame.is_valid(), false);
+    }
+
+    #[test]
     fn test_rm_unknown_msg() {
         let buf = [
             0x55, 0x0E, 0x04, 0x66, 0x09, 0x03, 0x4E, 0x06, 0xA0, 0x48, 0x08, 0x01, 0xC2, 0xE8,
@@ -264,7 +291,7 @@ mod tests {
 
         let frame = RMWireFrameView::new(&buf);
 
-        std::println!("{:#0X?}", frame);
+        // std::println!("{:#0X?}", frame);
 
         let crc16 = crate::crc::rm_crc16(0x3692, &buf[..buf.len() - 2]);
         assert_eq!(crc16, frame.packet_crc16_field());
@@ -290,6 +317,7 @@ mod tests {
         assert_eq!(frame.sequence_number(), 0xE0);
         assert_eq!(frame.is_ack(), false);
         assert_eq!(frame.need_ack(), false);
+        assert_eq!(frame.encrypt_type(), EncryptType::NO_ENC);
         assert_eq!(
             frame.cmd_set(),
             crate::duss::cmd_set_types::CommandSetType::RM as u8
@@ -301,10 +329,14 @@ mod tests {
         assert_eq!(frame.payload(), &buf[11..buf.len() - 2]);
 
         let crc8_calculated = crate::crc::rm_crc8(0x77, &buf[..3]);
+        let crc8_computed = frame.crc8_computed();
         assert_eq!(crc8_calculated, 0x75);
+        assert_eq!(crc8_computed, 0x75);
 
         let crc16_calculated = crate::crc::rm_crc16(0x3692, &buf[..buf.len() - 2]);
+        let crc16_computed = frame.crc16_computed();
         assert_eq!(crc16_calculated, 0xF0FA);
+        assert_eq!(crc16_computed, 0xF0FA);
 
         let my_payload_normal_mode = b"\x00\x04 \x00\x01\x08@\x00\x02\x10\x04\x00\x00\x04";
         assert_ne!(frame.payload(), my_payload_normal_mode);
@@ -415,7 +447,7 @@ mod tests {
     }
 
     #[test]
-    fn test_gimbal_set_angle_robostack() {
+    fn test_gimbal_set_vel_robostack() {
         let buf = [
             0x55, 0x14, 0x04, 0xFF, 0x09, 0x04, 0xFF, 0xFF, 0x00, 0x04, 0x69, 0x08, 0x05, 0x00,
             0x00, 0x00, 0x00, 0x6D, 0xFF, 0xFF,
@@ -430,7 +462,7 @@ mod tests {
             frame.cmd_set(),
             crate::duss::cmd_set_types::CommandSetType::GIMBAL as u8
         );
-        assert_eq!(frame.cmd_id(), 0x69);
+        assert_eq!(frame.cmd_id(), GimbalCommandType::GIMBAL_SET_VEL as u8);
 
         std::println!("{:0x?}", frame.payload())
     }
@@ -484,6 +516,34 @@ mod tests {
     ],
     packet_crc16_field: 0x441,
 }"#
+        );
+    }
+
+    #[test]
+    fn test_rm_wire_frame_view_debug_invalid() {
+        let buf: [u8; 12] = [
+            0x55, 0x24, 0x04, 0x40, 0x58, 0x1d, 0x00, 0x00, //
+            0x00, 0x00, 0xf0, 0x00, //
+        ];
+
+        let frame = RMWireFrameView::new(&buf);
+
+        assert_eq!(
+            std::format!("{:#0X?}", frame),
+            r#"RMWireFrameView { invalid }"#
+        );
+
+        let buf: [u8; 13] = [
+            0x55, 0x24, 0x04, 0x40, 0x58, 0x1d, 0x00, 0x00, //
+            0x00, 0x00, 0xf0, 0x00, 0x00, //
+        ];
+
+        let frame = RMWireFrameView::new(&buf);
+
+        assert_eq!(
+            std::format!("{:0X?}", frame),
+            "RMWireFrameView { sender_id: 58, receiver_id: 1D, packet_length_field: 24, sequence_number: 0, \
+            is_ack: false, need_ack: false, cmd_set: 0, cmd_id: F0, payload: [], packet_crc16_field: 0 }"
         );
     }
 }
