@@ -18,6 +18,22 @@
 //! - Payload (variable length)
 //! - Payload CRC16 (2 bytes)
 
+use num_enum::TryFromPrimitive;
+
+#[derive(Debug, PartialEq, Eq, TryFromPrimitive)]
+#[repr(u8)]
+#[allow(non_camel_case_types)]
+pub enum EncryptType {
+    NO_ENC = 0x00,
+    AES_128_ENC = 0x01,
+    CUSTOM_ENC = 0x02,
+    XOR_ENC = 0x03,
+    DES_56_ENC = 0x04,
+    DES_112_ENC = 0x05,
+    AES_192_ENC = 0x06,
+    AES_256_ENC = 0x07,
+}
+
 #[derive(PartialEq, Eq, Clone)]
 pub struct RMWireFrameView<T: AsRef<[u8]>> {
     buf: T,
@@ -84,6 +100,11 @@ impl<T: AsRef<[u8]>> RMWireFrameView<T> {
     pub fn need_ack(&self) -> bool {
         let buffer = self.buf.as_ref();
         buffer[8] & 0b0010_0000 != 0
+    }
+
+    pub fn encrypt_type(&self) -> EncryptType {
+        let buffer = self.buf.as_ref();
+        EncryptType::try_from(buffer[8] & 0b0000_0111).unwrap()
     }
 
     pub fn cmd_set(&self) -> u8 {
@@ -167,6 +188,11 @@ impl<T: AsRef<[u8]> + AsMut<[u8]>> RMWireFrameView<T> {
         } else {
             buffer[8] &= 0b1101_1111;
         }
+    }
+
+    pub fn set_encrypt_type(&mut self, encrypt_type: EncryptType) {
+        let buffer = self.buf.as_mut();
+        buffer[8] = (buffer[8] & 0b1111_1000) | (encrypt_type as u8);
     }
 
     pub fn set_cmd_set(&mut self, cmd_set: u8) {

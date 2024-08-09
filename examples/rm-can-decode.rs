@@ -5,8 +5,10 @@ use chumsky::Parser;
 use robomaster_s1_proto::{
     self,
     duss::{
-        cmd_set_gimbal::GimbalCommandType, cmd_set_rm::RMCommandType, cmd_set_types::CommandSetType,
+        cmd_set_common::CommonCommandType, cmd_set_gimbal::GimbalCommandType,
+        cmd_set_rm::RMCommandType, cmd_set_types::CommandSetType,
     },
+    wire::EncryptType,
 };
 
 use clap::Parser as ClapParser;
@@ -128,6 +130,25 @@ fn print_packet(id: u32, packet: &[u8]) {
                 if view.is_ack() { "K" } else { "_" },
                 CommandSetType::try_from(view.cmd_set()),
                 GimbalCommandType::try_from(view.cmd_id()),
+                show_buf(view.payload())
+            );
+        } else if view.cmd_set()
+            == robomaster_s1_proto::duss::cmd_set_types::CommandSetType::COMMON as u8
+        {
+            println!(
+                "{:#0x}: {:02x} to {:02x}, {}{}, {}, CS {:?}, CMD {:?}, {}",
+                id,
+                view.sender_id(),
+                view.receiver_id(),
+                if view.need_ack() { "A" } else { "_" },
+                if view.is_ack() { "K" } else { "_" },
+                if view.encrypt_type() == EncryptType::NO_ENC {
+                    "P"
+                } else {
+                    "ENC"
+                },
+                CommandSetType::try_from(view.cmd_set()),
+                CommonCommandType::try_from(view.cmd_id()),
                 show_buf(view.payload())
             );
         } else {

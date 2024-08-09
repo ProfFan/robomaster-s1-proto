@@ -1,6 +1,8 @@
+use num_enum::TryFromPrimitive;
+
 #[allow(non_camel_case_types)]
 #[repr(u8)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, TryFromPrimitive)]
 pub enum CommonCommandType {
     PING = 0x00,
     GET_DEVICE_VERSION = 0x01,
