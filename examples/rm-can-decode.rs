@@ -147,9 +147,9 @@ fn print_packet(id: u32, packet: &[u8]) {
                 if view.need_ack() { "A" } else { "_" },
                 if view.is_ack() { "K" } else { "_" },
                 if view.encrypt_type() == EncryptType::NO_ENC {
-                    "P"
+                    "P".to_string()
                 } else {
-                    "ENC"
+                    format!("E[{:?}]", view.encrypt_type())
                 },
                 CommandSetType::try_from(view.cmd_set()),
                 CommonCommandType::try_from(view.cmd_id()),
