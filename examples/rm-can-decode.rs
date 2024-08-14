@@ -66,10 +66,11 @@ fn print_packet(id: u32, packet: &[u8]) {
                     let topic_view = robomaster_s1_proto::duss::vbus::RMTopicView::new(view);
                     if topic_view.sub_mode() == 0 {
                         println!(
-                            "{:#0x}: {:02x} to {:02x}, VBUS PUSH Stream: {}, {}{}, DATA({}) {:02x?}",
+                            "{:#0x}: {:02x} to {:02x}, #{}, VBUS PUSH Stream: {}, {}{}, DATA({}) {:02x?}",
                             id,
                             topic_view.packet.sender_id(),
                             topic_view.packet.receiver_id(),
+                            topic_view.packet.sequence_number(),
                             topic_view.sub_id(),
                             if topic_view.packet.need_ack() {
                                 "A"
@@ -82,8 +83,10 @@ fn print_packet(id: u32, packet: &[u8]) {
                         );
                     } else {
                         println!(
-                            "{:#0x}: VBUS PUSH ACK, {}{}, PAYLOAD {:02x?}",
+                            "{:#0x}: {:02x} to {:02x}, VBUS PUSH ACK, {}{}, PAYLOAD {:02x?}",
                             id,
+                            topic_view.packet.sender_id(),
+                            topic_view.packet.receiver_id(),
                             if topic_view.packet.need_ack() {
                                 "A"
                             } else {
@@ -125,7 +128,7 @@ fn print_packet(id: u32, packet: &[u8]) {
             == robomaster_s1_proto::duss::cmd_set_types::CommandSetType::GIMBAL as u8
         {
             println!(
-                "{:#0x}: {:02x} to {:02x}, #{} {}{}, CS {:?}, CMD {:?}, {}",
+                "{:#0x}: {:02x} to {:02x}, #{}, {}{}, CS {:?}, CMD {:?}, {}",
                 id,
                 view.sender_id(),
                 view.receiver_id(),

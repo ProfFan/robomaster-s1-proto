@@ -1,6 +1,6 @@
 [package]
 name = "robomaster-s1-proto"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 authors = ["Fan Jiang"]
 license = "MIT OR Apache-2.0"
