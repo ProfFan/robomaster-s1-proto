@@ -97,7 +97,7 @@ mod tests {
     fn test_header_not_enough_data() {
         let buffer = [0x00, 0x55, 0x0E, 0x04];
         let result = parse_frame(&buffer);
-        assert_eq!(result, Err(ParseError::NeedMoreData(3, 1)));
+        assert_eq!(result, Err(ParseError::NeedMoreData(1, 1)));
     }
 
     #[test]

@@ -1,7 +1,7 @@
 use std::{collections::HashMap, io::BufRead, path::PathBuf};
 
 use candump_parse;
-use chumsky::{chain::Chain, Parser};
+use chumsky::Parser;
 use robomaster_s1_proto::{
     self,
     duss::{
@@ -140,10 +140,11 @@ fn print_packet(id: u32, packet: &[u8]) {
             == robomaster_s1_proto::duss::cmd_set_types::CommandSetType::COMMON as u8
         {
             println!(
-                "{:#0x}: {:02x} to {:02x}, {}{}, {}, CS {:?}, CMD {:?}, {}",
+                "{:#0x}: {:02x} to {:02x}, #{} {}{}, {}, CS {:?}, CMD {:?}, {}",
                 id,
                 view.sender_id(),
                 view.receiver_id(),
+                view.sequence_number(),
                 if view.need_ack() { "A" } else { "_" },
                 if view.is_ack() { "K" } else { "_" },
                 if view.encrypt_type() == EncryptType::NO_ENC {

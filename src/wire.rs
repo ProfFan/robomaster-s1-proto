@@ -300,6 +300,25 @@ mod tests {
     }
 
     #[test]
+    fn test_heartbeat_packet_robostack() {
+        let buf = [
+            0x55, 0x1B, 0x04, 0xFF, 0x09, 0xC3, 0x00, 0x00, 0x00, 0x3F, 0x60, 0x00, 0x04, 0x20,
+            0x00, 0x01, 0x00, 0x40, 0x00, 0x02, 0x10, 0x00, 0x03, 0x00, 0x00, 0xFF, 0xFF,
+        ];
+
+        let packet = RMWireFrameView::new(&buf);
+
+        assert_eq!(
+            packet.cmd_set(),
+            crate::duss::cmd_set_types::CommandSetType::RM as u8
+        );
+        assert_eq!(
+            packet.cmd_id(),
+            crate::duss::cmd_set_rm::RMCommandType::FC_RMC as u8
+        );
+    }
+
+    #[test]
     fn test_heartbeat_msg() {
         // The so call heartbeat message is actually a RMC (ReMote Control) message
         let buf = [

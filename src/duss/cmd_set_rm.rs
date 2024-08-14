@@ -39,7 +39,7 @@ pub enum RMCommandType {
     LED_COLOR_SET = 0x33,
     SET_CHASSIS_PWM_VALUE = 0x3c,
     GET_CHASSIS_PWM_VALUE = 0x3d,
-    // 0x3f from RoboStackS1, set chassis mode (slow/normal/fast)
+    /// 0x3f from RoboStackS1, set chassis mode (slow/normal/fast)
     SET_CHASSIS_SPEED = 0x3f,
     SET_TANK_WORK_MODE = 0x46,
     GET_TANK_WORK_MODE = 0x47,
